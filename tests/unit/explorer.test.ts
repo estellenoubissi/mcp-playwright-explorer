@@ -7,6 +7,7 @@ jest.mock('playwright');
 jest.mock('../../src/agent/analyzer');
 jest.mock('../../src/reporters/jsonReporter');
 jest.mock('../../src/reporters/markdownReporter');
+jest.mock('../../src/reporters/htmlReporter');
 
 import { LLMClient } from '../../src/agent/llmClient';
 import { chromium } from 'playwright';

@@ -17,6 +17,7 @@ program
   .option('--headed', 'Run browser in headed mode', false)
   .option('-o, --output <dir>', 'Output directory', 'outputs/test-cases')
   .option('--provider <provider>', 'LLM provider: anthropic, openai or groq')
+  .option('--no-html', 'Disable HTML report generation')
   .action(async (options) => {
     const provider = options.provider || process.env.LLM_PROVIDER || 'anthropic';
     process.env.LLM_PROVIDER = provider;
@@ -39,6 +40,7 @@ program
       feature: options.feature,
       headless: !options.headed,
       outputDir: options.output,
+      html: options.html,
     });
   });
 
