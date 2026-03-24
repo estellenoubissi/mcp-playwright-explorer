@@ -35,7 +35,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm test -- --passWithNoTests
+      - run: npm test -- --coverage --passWithNoTests
 
   e2e-tests:
     name: E2E Tests
