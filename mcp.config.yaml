@@ -1,0 +1,60 @@
+server:
+  name: mcp-playwright-explorer
+  version: 1.0.0
+  transport: stdio
+
+llm:
+  provider: anthropic
+  model: claude-3-7-sonnet-20250219
+  temperature: 0.15
+  max_tokens: 8000
+
+tools:
+  browser_navigate:
+    enabled: true
+    timeout: 30000
+  browser_screenshot:
+    enabled: true
+    fullPage: true
+    outputDir: outputs/screenshots
+  browser_click:
+    enabled: true
+  browser_fill:
+    enabled: true
+  dom_inspect:
+    enabled: true
+    maxDepth: 10
+  network_intercept:
+    enabled: true
+    captureRequests: true
+    captureResponses: true
+  accessibility_audit:
+    enabled: true
+
+exploration:
+  maxInteractions: 50
+  waitBetweenActions: 500
+  screenshotOnEachState: true
+  inferBusinessRules: true
+
+testGeneration:
+  categories:
+    - PASSANT
+    - NON_PASSANT
+    - COMPLEXE
+    - SIMPLE
+  priorities:
+    - CRITIQUE
+    - HAUTE
+    - MOYENNE
+    - BASSE
+  maxTestCasesPerFeature: 100
+  includeAccessibilityTests: true
+  includeSecurityTests: true
+
+output:
+  formats:
+    - json
+    - markdown
+  outputDir: outputs/test-cases
+  groupByCategory: true
