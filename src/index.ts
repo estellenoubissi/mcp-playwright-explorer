@@ -18,6 +18,8 @@ program
   .option('-o, --output <dir>', 'Output directory', 'outputs/test-cases')
   .option('--provider <provider>', 'LLM provider: anthropic, openai or groq')
   .option('--no-html', 'Disable HTML report generation')
+  .option('--auth', 'Force authentication before exploration (overrides AUTH_ENABLED in .env)')
+  .option('--no-auth', 'Disable authentication before exploration (overrides AUTH_ENABLED in .env)')
   .action(async (options) => {
     const provider = options.provider || process.env.LLM_PROVIDER || 'anthropic';
     process.env.LLM_PROVIDER = provider;
@@ -35,12 +37,28 @@ program
       process.exit(1);
     }
 
+    // Determine if auth should be enabled
+    const authFlag: boolean | undefined = options.auth === true ? true : options.auth === false ? false : undefined;
+    const authEnabled = authFlag !== undefined ? authFlag : process.env.AUTH_ENABLED === 'true';
+
+    if (authEnabled) {
+      if (!process.env.AUTH_USERNAME) {
+        console.error('❌ AUTH_USERNAME is not set in .env (required when auth is enabled)');
+        process.exit(1);
+      }
+      if (!process.env.AUTH_PASSWORD) {
+        console.error('❌ AUTH_PASSWORD is not set in .env (required when auth is enabled)');
+        process.exit(1);
+      }
+    }
+
     await new Explorer().explore({
       url: options.url,
       feature: options.feature,
       headless: !options.headed,
       outputDir: options.output,
       html: options.html,
+      auth: authFlag,
     });
   });
 

@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium, Page } from 'playwright';
 import { LLMClient } from './llmClient';
 import { buildExploratoryPrompt } from '../mcp/prompts/exploratoryPrompt';
 import { Analyzer } from './analyzer';
@@ -14,6 +14,7 @@ export interface ExplorerOptions {
   headless?: boolean;
   outputDir?: string;
   html?: boolean;
+  auth?: boolean;
 }
 
 export class Explorer {
@@ -27,14 +28,62 @@ export class Explorer {
     this.llm = new LLMClient();
   }
 
+  private async authenticate(page: Page, authEnabled: boolean): Promise<void> {
+    if (!authEnabled) return;
+
+    const authUrl = process.env.AUTH_URL || '';
+    const username = process.env.AUTH_USERNAME || '';
+    const password = process.env.AUTH_PASSWORD || '';
+    const usernameSelector = process.env.AUTH_USERNAME_SELECTOR || '';
+    const passwordSelector = process.env.AUTH_PASSWORD_SELECTOR || '';
+    const submitSelector = process.env.AUTH_SUBMIT_SELECTOR || '#login_ok';
+    const usernameLabel = process.env.AUTH_USERNAME_LABEL || "Nom d'utilisateur";
+    const passwordLabel = process.env.AUTH_PASSWORD_LABEL || 'Mot de passe';
+    const sslButtonText = process.env.AUTH_SSL_BUTTON || 'Paramètres avancés';
+    const sslContinueText = process.env.AUTH_SSL_CONTINUE || 'Continuer vers le site';
+
+    console.log(`🔐 Authenticating on ${authUrl}...`);
+
+    await page.goto(authUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    const advancedButton = page.getByRole('button', { name: sslButtonText });
+    const hasSSLWarning = await advancedButton.isVisible({ timeout: 3000 }).catch(() => false);
+    if (hasSSLWarning) {
+      console.log('⚠️  SSL certificate warning detected, bypassing...');
+      await advancedButton.click();
+      const continueLink = page.getByRole('link', { name: new RegExp(sslContinueText) });
+      await continueLink.click();
+      await page.waitForLoadState('domcontentloaded');
+    }
+
+    const usernameField = usernameSelector
+      ? page.locator(usernameSelector)
+      : page.getByRole('textbox', { name: usernameLabel });
+    const passwordField = passwordSelector
+      ? page.locator(passwordSelector)
+      : page.getByRole('textbox', { name: passwordLabel });
+
+    await usernameField.fill(username);
+    await passwordField.fill(password);
+    await page.locator(submitSelector).click();
+    await page.waitForLoadState('networkidle');
+
+    console.log('🔐 Authentication successful');
+  }
+
   async explore(options: ExplorerOptions): Promise<ExplorationResult> {
-    const { url, feature, headless = true, html = true } = options;
+    const { url, feature, headless = true, html = true, auth } = options;
+
+    const authEnabled = auth !== undefined ? auth : process.env.AUTH_ENABLED === 'true';
+
     console.log(`\n🚀 Starting exploration of "${feature}" at ${url}\n`);
 
-    const browser = await chromium.launch({ headless });
-    const page = await browser.newPage();
+    const browser = await chromium.launch({ headless, args: ['--ignore-certificate-errors'] });
+    const context = await browser.newContext({ ignoreHTTPSErrors: true });
+    const page = await context.newPage();
 
     try {
+      await this.authenticate(page, authEnabled);
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
       const analysis = await new Analyzer(page).analyze(feature);
 
