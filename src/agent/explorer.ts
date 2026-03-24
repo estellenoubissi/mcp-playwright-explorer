@@ -5,6 +5,7 @@ import { Analyzer } from './analyzer';
 import { Classifier } from './classifier';
 import { JsonReporter } from '../reporters/jsonReporter';
 import { MarkdownReporter } from '../reporters/markdownReporter';
+import { HtmlReporter } from '../reporters/htmlReporter';
 import { ExplorationResult, TestCase } from '../reporters/types';
 
 export interface ExplorerOptions {
@@ -12,6 +13,7 @@ export interface ExplorerOptions {
   feature: string;
   headless?: boolean;
   outputDir?: string;
+  html?: boolean;
 }
 
 export class Explorer {
@@ -19,13 +21,14 @@ export class Explorer {
   private classifier = new Classifier();
   private jsonReporter = new JsonReporter();
   private markdownReporter = new MarkdownReporter();
+  private htmlReporter = new HtmlReporter();
 
   constructor() {
     this.llm = new LLMClient();
   }
 
   async explore(options: ExplorerOptions): Promise<ExplorationResult> {
-    const { url, feature, headless = true } = options;
+    const { url, feature, headless = true, html = true } = options;
     console.log(`\n🚀 Starting exploration of "${feature}" at ${url}\n`);
 
     const browser = await chromium.launch({ headless });
@@ -67,6 +70,9 @@ export class Explorer {
 
       this.jsonReporter.generate(result);
       this.markdownReporter.generate(result);
+      if (html) {
+        this.htmlReporter.generate(result);
+      }
 
       console.log(`\n✅ Done! ${result.totalTestCases} test cases generated.`);
       console.log(`   ✅ ${result.summary.passant} passants | ❌ ${result.summary.non_passant} non-passants | 🔴 ${result.summary.complexe} complexes | 🟢 ${result.summary.simple} simples\n`);
