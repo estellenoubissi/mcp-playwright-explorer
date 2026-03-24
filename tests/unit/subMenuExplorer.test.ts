@@ -69,6 +69,8 @@ const mockPage = {
     click: jest.fn().mockResolvedValue(undefined),
   }),
   waitForLoadState: jest.fn().mockResolvedValue(undefined),
+  waitForSelector: jest.fn().mockResolvedValue(undefined),
+  waitForTimeout: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockContext = {
@@ -305,5 +307,62 @@ describe('SubMenuExplorer', () => {
     expect(results).toHaveLength(1);
     expect(results[0].url).toBe('https://example.com/feature');
     expect(results[0].feature).toBe('Feature');
+  });
+
+  it('exploreWithSubMenus() waits for waitForSelector before detecting menus', async () => {
+    const explorer = new SubMenuExplorer();
+    await explorer.exploreWithSubMenus({
+      url: 'https://example.com/feature',
+      feature: 'Feature',
+      waitForSelector: '#my-tab',
+    });
+
+    expect(mockPage.waitForSelector).toHaveBeenCalledWith('#my-tab', { state: 'visible', timeout: 30000 });
+    expect(mockPage.waitForTimeout).not.toHaveBeenCalledWith(expect.any(Number));
+  });
+
+  it('exploreWithSubMenus() waits for waitForTimeout when waitForSelector is not set', async () => {
+    const explorer = new SubMenuExplorer();
+    await explorer.exploreWithSubMenus({
+      url: 'https://example.com/feature',
+      feature: 'Feature',
+      waitForTimeout: 2000,
+    });
+
+    expect(mockPage.waitForTimeout).toHaveBeenCalledWith(2000);
+    expect(mockPage.waitForSelector).not.toHaveBeenCalled();
+  });
+
+  it('exploreWithSubMenus() prefers waitForSelector over waitForTimeout when both are set', async () => {
+    const explorer = new SubMenuExplorer();
+    await explorer.exploreWithSubMenus({
+      url: 'https://example.com/feature',
+      feature: 'Feature',
+      waitForSelector: '#my-tab',
+      waitForTimeout: 2000,
+    });
+
+    expect(mockPage.waitForSelector).toHaveBeenCalledWith('#my-tab', { state: 'visible', timeout: 30000 });
+    expect(mockPage.waitForTimeout).not.toHaveBeenCalledWith(2000);
+  });
+
+  it('exploreWithSubMenus() waits 500ms after authentication completes', async () => {
+    process.env.AUTH_ENABLED = 'true';
+    process.env.AUTH_URL = 'https://example.com/login';
+    process.env.AUTH_USERNAME = 'user';
+    process.env.AUTH_PASSWORD = 'pass';
+
+    mockPage.locator = jest.fn().mockReturnValue({
+      all: jest.fn().mockResolvedValue([makeAnchorLocator()]),
+      click: jest.fn().mockResolvedValue(undefined),
+    });
+
+    const explorer = new SubMenuExplorer();
+    await explorer.exploreWithSubMenus({
+      url: 'https://example.com/feature',
+      feature: 'Feature',
+    });
+
+    expect(mockPage.waitForTimeout).toHaveBeenCalledWith(500);
   });
 });

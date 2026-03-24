@@ -67,6 +67,8 @@ const mockPage = {
     click: jest.fn().mockResolvedValue(undefined),
   }),
   waitForLoadState: jest.fn().mockResolvedValue(undefined),
+  waitForSelector: jest.fn().mockResolvedValue(undefined),
+  waitForTimeout: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockContext = {
@@ -264,5 +266,46 @@ describe('Explorer', () => {
     expect(mockPage.goto).toHaveBeenCalledTimes(2);
     expect(mockPage.goto).toHaveBeenNthCalledWith(1, 'https://example.com/login', expect.any(Object));
     expect(mockFill).toHaveBeenCalledTimes(2);
+  });
+
+  it('explore() waits for waitForSelector before analyzing page', async () => {
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login', waitForSelector: '#main-nav' });
+
+    expect(mockPage.waitForSelector).toHaveBeenCalledWith('#main-nav', { state: 'visible', timeout: 30000 });
+    expect(mockPage.waitForTimeout).not.toHaveBeenCalledWith(expect.any(Number));
+  });
+
+  it('explore() waits for waitForTimeout when waitForSelector is not set', async () => {
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login', waitForTimeout: 1500 });
+
+    expect(mockPage.waitForTimeout).toHaveBeenCalledWith(1500);
+    expect(mockPage.waitForSelector).not.toHaveBeenCalled();
+  });
+
+  it('explore() prefers waitForSelector over waitForTimeout when both are set', async () => {
+    const explorer = new Explorer();
+    await explorer.explore({
+      url: 'https://example.com',
+      feature: 'login',
+      waitForSelector: '#main-nav',
+      waitForTimeout: 1500,
+    });
+
+    expect(mockPage.waitForSelector).toHaveBeenCalledWith('#main-nav', { state: 'visible', timeout: 30000 });
+    expect(mockPage.waitForTimeout).not.toHaveBeenCalledWith(1500);
+  });
+
+  it('explore() waits 500ms after authentication completes', async () => {
+    process.env.AUTH_ENABLED = 'true';
+    process.env.AUTH_URL = 'https://example.com/login';
+    process.env.AUTH_USERNAME = 'user';
+    process.env.AUTH_PASSWORD = 'pass';
+
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login' });
+
+    expect(mockPage.waitForTimeout).toHaveBeenCalledWith(500);
   });
 });

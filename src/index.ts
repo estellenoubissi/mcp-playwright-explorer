@@ -54,6 +54,8 @@ program
   .option('--no-html', 'Disable HTML report generation')
   .option('--auth', 'Force authentication before exploration (overrides AUTH_ENABLED in .env)')
   .option('--no-auth', 'Disable authentication before exploration (overrides AUTH_ENABLED in .env)')
+  .option('--wait-for <selector>', 'CSS selector to wait for before starting exploration (e.g. ".my-tab", "#main-nav")')
+  .option('--wait-timeout <ms>', 'Time in ms to wait after navigation before starting exploration', parseInt)
   .action(async (options) => {
     validateProvider(options);
 
@@ -68,6 +70,8 @@ program
       outputDir: options.output,
       html: options.html,
       auth: authFlag,
+      waitForSelector: options.waitFor,
+      waitForTimeout: options.waitTimeout,
     });
   });
 
@@ -83,6 +87,8 @@ program
   .option('--no-html', 'Disable HTML report generation')
   .option('--auth', 'Force authentication before exploration (overrides AUTH_ENABLED in .env)')
   .option('--no-auth', 'Disable authentication before exploration (overrides AUTH_ENABLED in .env)')
+  .option('--wait-for <selector>', 'CSS selector to wait for before detecting menus (e.g. ".my-tab", "#main-nav")')
+  .option('--wait-timeout <ms>', 'Time in ms to wait after navigation before detecting menus', parseInt)
   .action(async (options) => {
     validateProvider(options);
 
@@ -98,6 +104,8 @@ program
       outputDir: options.output,
       html: options.html,
       auth: authFlag,
+      waitForSelector: options.waitFor,
+      waitForTimeout: options.waitTimeout,
     });
   });
 

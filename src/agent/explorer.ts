@@ -11,6 +11,8 @@ import { ExplorationResult, TestCase } from '../reporters/types';
 export interface ExplorerOptions {
   url: string;
   feature: string;
+  waitForSelector?: string;
+  waitForTimeout?: number;
   headless?: boolean;
   outputDir?: string;
   html?: boolean;
@@ -67,12 +69,13 @@ export class Explorer {
     await passwordField.fill(password);
     await page.locator(submitSelector).click();
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
 
     console.log('🔐 Authentication successful');
   }
 
   async explore(options: ExplorerOptions): Promise<ExplorationResult> {
-    const { url, feature, headless = true, html = true, auth } = options;
+    const { url, feature, waitForSelector, waitForTimeout, headless = true, html = true, auth } = options;
 
     const authEnabled = auth !== undefined ? auth : process.env.AUTH_ENABLED === 'true';
 
@@ -85,6 +88,16 @@ export class Explorer {
     try {
       await this.authenticate(page, authEnabled);
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+
+      if (waitForSelector) {
+        console.log(`⏳ Waiting for selector "${waitForSelector}" to be visible...`);
+        await page.waitForSelector(waitForSelector, { state: 'visible', timeout: 30000 });
+        console.log(`✅ Selector "${waitForSelector}" is now visible`);
+      } else if (waitForTimeout) {
+        console.log(`⏳ Waiting ${waitForTimeout}ms for the page to fully load...`);
+        await page.waitForTimeout(waitForTimeout);
+      }
+
       const analysis = await new Analyzer(page).analyze(feature);
 
       const prompt = [
