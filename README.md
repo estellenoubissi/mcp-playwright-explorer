@@ -146,6 +146,12 @@ npm run explore:submenus -- --url https://monapp.com/users --feature "Gestion ut
 
 # With headed browser and authentication
 npm run explore:submenus -- --url https://monapp.com/users --feature "Gestion utilisateurs" --headed --auth
+
+# Wait for a specific CSS selector before detecting menus (e.g. for lazy-loaded menus)
+npm run explore:submenus -- --url https://monapp.com/preparation --feature "La préparation" --auth --wait-for "#preparation-tab"
+
+# Or wait a fixed delay if the selector is unknown
+npm run explore:submenus -- --url https://monapp.com/preparation --feature "La préparation" --auth --wait-timeout 3000
 ```
 
 ### Options
@@ -160,6 +166,8 @@ npm run explore:submenus -- --url https://monapp.com/users --feature "Gestion ut
 | `--provider <provider>` | LLM provider: anthropic, openai or groq | anthropic |
 | `--no-html` | Disable HTML report generation | — |
 | `--auth` / `--no-auth` | Force/disable authentication | `AUTH_ENABLED` env var |
+| `--wait-for <selector>` | CSS selector to wait for before detecting menus | — |
+| `--wait-timeout <ms>` | Time in ms to wait after navigation before detecting menus | — |
 
 ### Generated files
 
