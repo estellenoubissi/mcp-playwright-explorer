@@ -58,10 +58,23 @@ const mockAnalyzerResult = {
 
 const mockPage = {
   goto: jest.fn().mockResolvedValue(undefined),
+  getByRole: jest.fn().mockReturnValue({
+    isVisible: jest.fn().mockResolvedValue(false),
+    fill: jest.fn().mockResolvedValue(undefined),
+    click: jest.fn().mockResolvedValue(undefined),
+  }),
+  locator: jest.fn().mockReturnValue({
+    click: jest.fn().mockResolvedValue(undefined),
+  }),
+  waitForLoadState: jest.fn().mockResolvedValue(undefined),
+};
+
+const mockContext = {
+  newPage: jest.fn().mockResolvedValue(mockPage),
 };
 
 const mockBrowser = {
-  newPage: jest.fn().mockResolvedValue(mockPage),
+  newContext: jest.fn().mockResolvedValue(mockContext),
   close: jest.fn().mockResolvedValue(undefined),
 };
 
@@ -71,6 +84,12 @@ beforeEach(() => {
   // Set environment variable so LLMClient constructor doesn't throw
   process.env.LLM_PROVIDER = 'anthropic';
   process.env.ANTHROPIC_API_KEY = 'test-key';
+
+  // Ensure auth is disabled by default
+  delete process.env.AUTH_ENABLED;
+  delete process.env.AUTH_URL;
+  delete process.env.AUTH_USERNAME;
+  delete process.env.AUTH_PASSWORD;
 
   MockLLMClient.prototype.complete = jest.fn().mockResolvedValue({ text: fakeLLMResponse });
 
@@ -82,6 +101,10 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.LLM_PROVIDER;
   delete process.env.ANTHROPIC_API_KEY;
+  delete process.env.AUTH_ENABLED;
+  delete process.env.AUTH_URL;
+  delete process.env.AUTH_USERNAME;
+  delete process.env.AUTH_PASSWORD;
 });
 
 describe('Explorer', () => {
@@ -129,6 +152,24 @@ describe('Explorer', () => {
     expect(mockChromium.launch).toHaveBeenCalledTimes(1);
   });
 
+  it('calls chromium.launch() with --ignore-certificate-errors arg', async () => {
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login' });
+
+    expect(mockChromium.launch).toHaveBeenCalledWith(
+      expect.objectContaining({ args: expect.arrayContaining(['--ignore-certificate-errors']) }),
+    );
+  });
+
+  it('creates a browser context with ignoreHTTPSErrors', async () => {
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login' });
+
+    expect(mockBrowser.newContext).toHaveBeenCalledWith(
+      expect.objectContaining({ ignoreHTTPSErrors: true }),
+    );
+  });
+
   it('calls LLMClient.complete() with the exploration prompt', async () => {
     const explorer = new Explorer();
     await explorer.explore({ url: 'https://example.com', feature: 'login' });
@@ -153,5 +194,75 @@ describe('Explorer', () => {
     );
 
     expect(mockBrowser.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips authentication when AUTH_ENABLED is not set', async () => {
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login' });
+
+    // page.goto should only be called once (for the main URL), not for auth URL
+    expect(mockPage.goto).toHaveBeenCalledTimes(1);
+    expect(mockPage.goto).toHaveBeenCalledWith('https://example.com', expect.any(Object));
+  });
+
+  it('skips authentication when auth option is false', async () => {
+    process.env.AUTH_ENABLED = 'true';
+    process.env.AUTH_URL = 'https://example.com/login';
+    process.env.AUTH_USERNAME = 'user';
+    process.env.AUTH_PASSWORD = 'pass';
+
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login', auth: false });
+
+    // page.goto should only be called once (main URL), auth is disabled via option
+    expect(mockPage.goto).toHaveBeenCalledTimes(1);
+    expect(mockPage.goto).toHaveBeenCalledWith('https://example.com', expect.any(Object));
+  });
+
+  it('performs authentication when AUTH_ENABLED=true is set in env', async () => {
+    process.env.AUTH_ENABLED = 'true';
+    process.env.AUTH_URL = 'https://example.com/login';
+    process.env.AUTH_USERNAME = 'ldap_user';
+    process.env.AUTH_PASSWORD = 'secret';
+
+    const mockFill = jest.fn().mockResolvedValue(undefined);
+    const mockLocatorClick = jest.fn().mockResolvedValue(undefined);
+    mockPage.getByRole = jest.fn().mockReturnValue({
+      isVisible: jest.fn().mockResolvedValue(false),
+      fill: mockFill,
+      click: jest.fn().mockResolvedValue(undefined),
+    });
+    mockPage.locator = jest.fn().mockReturnValue({ click: mockLocatorClick });
+
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login' });
+
+    // page.goto called twice: once for auth URL, once for main URL
+    expect(mockPage.goto).toHaveBeenCalledTimes(2);
+    expect(mockPage.goto).toHaveBeenNthCalledWith(1, 'https://example.com/login', expect.any(Object));
+    expect(mockPage.goto).toHaveBeenNthCalledWith(2, 'https://example.com', expect.any(Object));
+    expect(mockFill).toHaveBeenCalledTimes(2);
+    expect(mockLocatorClick).toHaveBeenCalledWith();
+  });
+
+  it('performs authentication when auth option is true', async () => {
+    process.env.AUTH_URL = 'https://example.com/login';
+    process.env.AUTH_USERNAME = 'ldap_user';
+    process.env.AUTH_PASSWORD = 'secret';
+
+    const mockFill = jest.fn().mockResolvedValue(undefined);
+    mockPage.getByRole = jest.fn().mockReturnValue({
+      isVisible: jest.fn().mockResolvedValue(false),
+      fill: mockFill,
+      click: jest.fn().mockResolvedValue(undefined),
+    });
+    mockPage.locator = jest.fn().mockReturnValue({ click: jest.fn().mockResolvedValue(undefined) });
+
+    const explorer = new Explorer();
+    await explorer.explore({ url: 'https://example.com', feature: 'login', auth: true });
+
+    expect(mockPage.goto).toHaveBeenCalledTimes(2);
+    expect(mockPage.goto).toHaveBeenNthCalledWith(1, 'https://example.com/login', expect.any(Object));
+    expect(mockFill).toHaveBeenCalledTimes(2);
   });
 });
