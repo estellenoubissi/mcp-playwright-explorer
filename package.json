@@ -4,13 +4,13 @@
   "description": "AI-powered exploratory test agent using Playwright + MCP",
   "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "ts-node -r dotenv/config src/index.ts",
     "build": "tsc",
     "test": "jest",
     "test:e2e": "playwright test",
-    "mcp:server": "ts-node src/mcp/server.ts",
-    "explore": "ts-node src/index.ts explore",
-    "explore:submenus": "ts-node src/index.ts explore-submenus",
+    "mcp:server": "ts-node -r dotenv/config src/mcp/server.ts",
+    "explore": "ts-node -r dotenv/config src/index.ts explore",
+    "explore:submenus": "ts-node -r dotenv/config src/index.ts explore-submenus",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
   },

@@ -1,8 +1,6 @@
 import { Command } from 'commander';
-import dotenv from 'dotenv';
 import { Explorer } from './agent/explorer';
 import { SubMenuExplorer } from './agent/subMenuExplorer';
-dotenv.config();
 
 function validateProvider(options: { provider?: string }): void {
   const provider = options.provider || process.env.LLM_PROVIDER || 'anthropic';

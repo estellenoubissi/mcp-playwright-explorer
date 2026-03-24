@@ -7,8 +7,6 @@ import { takeScreenshot } from './tools/screenshot';
 import { inspectDOM } from './tools/inspect';
 import { setupNetworkInterceptor } from './tools/network';
 import { NetworkCall } from '../reporters/types';
-import dotenv from 'dotenv';
-dotenv.config();
 
 let page: Page | null = null;
 let networkCalls: NetworkCall[] = [];
