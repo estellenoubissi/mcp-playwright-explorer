@@ -10,6 +10,7 @@
     "test:e2e": "playwright test",
     "mcp:server": "ts-node src/mcp/server.ts",
     "explore": "ts-node src/index.ts explore",
+    "explore:submenus": "ts-node src/index.ts explore-submenus",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
   },
