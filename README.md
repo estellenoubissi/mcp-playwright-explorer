@@ -78,6 +78,51 @@ HEADLESS=true
 
 See `mcp.config.yaml` for full MCP/tool configuration.
 
+## 🤖 LLM Providers
+
+### Anthropic (default)
+
+```env
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+```
+
+### OpenAI
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-proj-...
+OPENAI_MODEL=gpt-4o
+```
+
+### Groq 🆓 FREE
+
+[Groq](https://console.groq.com/) offers a **free API** (with rate limits) compatible with the OpenAI format, using models like `llama-3.3-70b-versatile`.
+
+1. Create a free API key at **https://console.groq.com/**
+2. Configure your `.env`:
+
+```env
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+3. Run the explorer:
+
+```bash
+npm run explore -- --url https://demo.playwright.dev/todomvc --feature "Todo List" --provider groq
+```
+
+Expected output:
+
+```
+🤖 LLM Provider: Groq (llama-3.3-70b-versatile) 🆓 FREE
+🚀 Starting exploration of "Todo List" at https://demo.playwright.dev/todomvc
+...
+```
+
 ## 📊 Output
 
 Generated test cases are saved to `outputs/test-cases/` in both JSON and Markdown formats.
