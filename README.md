@@ -123,6 +123,85 @@ Expected output:
 ...
 ```
 
+## 🗂️ Exploration multi-sous-menus
+
+The `explore-submenus` command lets you explore a main navigation tab and **all its sub-menus** automatically, generating **one HTML report per sub-menu**.
+
+### How it works
+
+1. Navigates to the given URL (with optional authentication)
+2. Detects all sub-menu links in the navigation bar (auto-detection or via a custom CSS selector)
+3. Visits each sub-menu page sequentially
+4. Calls the LLM to generate test cases for each sub-menu
+5. Generates JSON + Markdown + HTML reports for each sub-menu
+
+### Usage
+
+```bash
+# Explore a tab and all its sub-menus (auto-detect navigation)
+npm run explore:submenus -- --url https://monapp.com/users --feature "Gestion utilisateurs"
+
+# With a custom nav selector
+npm run explore:submenus -- --url https://monapp.com/users --feature "Gestion utilisateurs" --nav-selector ".left-sidebar a"
+
+# With headed browser and authentication
+npm run explore:submenus -- --url https://monapp.com/users --feature "Gestion utilisateurs" --headed --auth
+```
+
+### Options
+
+| Option | Description | Default |
+|---|---|---|
+| `-u, --url <url>` | URL of the main tab (required) | — |
+| `-f, --feature <feature>` | Name of the main tab (required) | — |
+| `--nav-selector <selector>` | CSS selector for the nav menu | auto-detection |
+| `--headed` | Run browser in headed mode | headless |
+| `-o, --output <dir>` | Output directory | `outputs/test-cases` |
+| `--provider <provider>` | LLM provider: anthropic, openai or groq | anthropic |
+| `--no-html` | Disable HTML report generation | — |
+| `--auth` / `--no-auth` | Force/disable authentication | `AUTH_ENABLED` env var |
+
+### Generated files
+
+For each detected sub-menu, three files are created in the output directory:
+
+```
+outputs/test-cases/
+  liste-1234567890.json
+  liste-1234567890.md
+  liste-1234567890.html
+  creation-1234567890.json
+  creation-1234567890.md
+  creation-1234567890.html
+  ...
+```
+
+### Example output
+
+```
+🔐 Authentication successful
+🚀 Starting sub-menu exploration of "Gestion utilisateurs" at https://monapp.com/users
+
+🗂️ Detected 3 sub-menus: [Liste, Création, Permissions]
+
+📂 Exploring sub-menu [1/3]: "Liste"
+🤖 Calling LLM...
+
+📂 Exploring sub-menu [2/3]: "Création"
+🤖 Calling LLM...
+
+📂 Exploring sub-menu [3/3]: "Permissions"
+🤖 Calling LLM...
+
+============================================
+🎯 Sub-menu exploration complete!
+   📂 3 sub-menus explored
+   🧪 Total: 45 test cases generated
+   ✅ 20 passants | ❌ 15 non-passants | 🔴 5 complexes | 🟢 5 simples
+   📁 Reports saved in: outputs/test-cases/
+============================================
+```
+
 ## 📊 Output
 
 Generated test cases are saved to `outputs/test-cases/` in both JSON and Markdown formats.
